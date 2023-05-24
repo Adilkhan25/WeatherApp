@@ -9,6 +9,10 @@ import android.os.Build
 // START
 object Constants {
 
+    // TODO (STEP 2: Add the API key and Base URL and Metric unit here from openweathermap.)
+    const val APP_ID: String = "e16fcdc9d894f16b7a08acd743e5ad69"
+    const val BASE_URL: String = "https://api.openweathermap.org/data/"
+    const val METRIC_UNIT: String = "metric"
     // TODO (STEP 3: Add a function to check the network connection is available or not.)
     /**
      * This function is used check the weather the device is connected to the Internet or not.

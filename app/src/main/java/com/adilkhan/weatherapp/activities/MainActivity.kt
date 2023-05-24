@@ -9,6 +9,7 @@ import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
@@ -16,6 +17,8 @@ import android.os.Build
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.adilkhan.weatherapp.databinding.ActivityMainBinding
@@ -23,6 +26,7 @@ import com.adilkhan.weatherapp.models.WeatherResponse
 import com.adilkhan.weatherapp.network.WeatherService
 import com.adilkhan.weatherapp.utills.Constants
 import com.google.android.gms.location.*
+import com.google.gson.Gson
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -42,12 +46,23 @@ class MainActivity : AppCompatActivity() {
 
     // A fused location client variable which is further user to get the user's current location
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
+    // A global variable for Current Latitude
+    private var mLatitude: Double = 0.0
+    // A global variable for Current Longitude
+    private var mLongitude: Double = 0.0
 
     // A global variable for Progress Dialog
     private var mProgressDialog: Dialog? = null
 
+    // TODO (STEP 1: Add a variable for SharedPreferences)
+    // START
+    // A global variable for the SharedPreferences
+    private lateinit var mSharedPreferences: SharedPreferences
+    // END
+
     // make view by binding
     private var binding : ActivityMainBinding? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +72,19 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize the Fused location variable
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        // TODO (STEP 2: Initialize the SharedPreferences variable.)
+        // START
+        // Initialize the SharedPreferences variable
+        mSharedPreferences = getSharedPreferences(Constants.PREFERENCE_NAME, Context.MODE_PRIVATE)
+        // END
+
+        // TODO (STEP 7: Call the UI method to populate the data in
+        //  the UI which are already stored in sharedPreferences earlier.
+        //  At first run it will be blank.)
+        // START
+        setupUI()
+        // END
 
         if (!isLocationEnabled()) {
             Toast.makeText(
@@ -69,7 +97,7 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(intent)
         } else {
-            Dexter.withActivity(this)
+            Dexter.withContext(this)
                 .withPermissions(
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION
@@ -99,7 +127,21 @@ class MainActivity : AppCompatActivity() {
                 .check()
         }
     }
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_refresh -> {
+                getLocationWeatherDetails()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
     /**
      * A function which is used to verify that the location or GPS is enable or not of the user's device.
      */
@@ -159,20 +201,20 @@ class MainActivity : AppCompatActivity() {
     private val mLocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             val mLastLocation: Location? = locationResult.lastLocation
-            val latitude : Double? = mLastLocation?.latitude
-            Log.i("Current Latitude", "$latitude")
+            mLatitude  = mLastLocation?.latitude!!
+            Log.i("Current Latitude", "$mLatitude")
 
-            val longitude : Double? = mLastLocation?.longitude
-            Log.i("Current Longitude", "$longitude")
+            mLongitude  = mLastLocation?.longitude!!
+            Log.i("Current Longitude", "$mLongitude")
 
-            getLocationWeatherDetails(latitude!!, longitude!!)
+            getLocationWeatherDetails()
         }
     }
 
     /**
      * Function is used to get the weather details of the current location based on the latitude longitude
      */
-    private fun getLocationWeatherDetails(latitude: Double, longitude: Double) {
+    private fun getLocationWeatherDetails() {
 
         if (Constants.isNetworkAvailable(this@MainActivity)) {
 
@@ -203,7 +245,7 @@ class MainActivity : AppCompatActivity() {
              * Here we pass the required param in the service
              */
             val listCall: Call<WeatherResponse> = service.getWeather(
-                latitude, longitude, Constants.METRIC_UNIT, Constants.APP_ID
+                mLatitude ,mLongitude, Constants.METRIC_UNIT, Constants.APP_ID
             )
 
             showCustomProgressDialog() // Used to show the progress dialog
@@ -225,9 +267,20 @@ class MainActivity : AppCompatActivity() {
                         val weatherList: WeatherResponse = response.body()
                         Log.i("Response Result", "$weatherList")
 
-                        // TODO (STEP 6: Call the setup UI method here and pass the response object as a parameter to it to get the individual values.)
+                        // TODO (STEP 4: Here we convert the response object to string and store the string in the SharedPreference.)
                         // START
-                        setupUI(weatherList)
+                        // Here we have converted the model class in to Json String to store it in the SharedPreferences.
+                        val weatherResponseJsonString = Gson().toJson(weatherList)
+                        // Save the converted string to shared preferences
+                        val editor = mSharedPreferences.edit()
+                        editor.putString(Constants.WEATHER_RESPONSE_DATA, weatherResponseJsonString)
+                        editor.apply()
+                        // END
+
+                        // TODO (STEP 5: Remove the weather detail object as we will be getting
+                        //  the object in form of a string in the setup UI method.)
+                        // START
+                        setupUI()
                         // END
                     } else {
                         // If the response is not success then we check the response code.
@@ -287,43 +340,56 @@ class MainActivity : AppCompatActivity() {
     /**
      * Function is used to set the result in the UI elements.
      */
-    private fun setupUI(weatherList: WeatherResponse) {
+    private fun setupUI() {
+// TODO (STEP 6: Here we get the stored response from
+        //  SharedPreferences and again convert back to data object
+        //  to populate the data in the UI.)
+        // START
+        // Here we have got the latest stored response from the SharedPreference and converted back to the data model object.
+        val weatherResponseJsonString =
+            mSharedPreferences.getString(Constants.WEATHER_RESPONSE_DATA, "")
 
-        // For loop to get the required data. And all are populated in the UI.
-        for (z in weatherList.weather.indices) {
-            Log.i("NAMEEEEEEEE", weatherList.weather[z].main)
+        if (!weatherResponseJsonString.isNullOrEmpty()) {
 
-            binding?.tvMain?.text = weatherList.weather[z].main
-            binding?.tvMainDescription?.text = weatherList.weather[z].description
-            binding?.tvTemp?.text =
-                weatherList.main.temp.toString() + getUnit()
-            binding?.tvHumidity?.text= weatherList.main.humidity.toString() + " per cent"
-            binding?.tvMin?.text= weatherList.main.temp_min.toString() + " min"
-            binding?.tvMax?.text= weatherList.main.temp_max.toString() + " max"
-            binding?.tvSpeed?.text= weatherList.wind.speed.toString()
-            binding?.tvName?.text= weatherList.name
-            binding?.tvCountry?.text= weatherList.sys.country
-            binding?.tvSunriseTime?.text= unixTime(weatherList.sys.sunrise.toLong())
-            binding?.tvSunsetTime?.text= unixTime(weatherList.sys.sunset.toLong())
+            val weatherList =
+                Gson().fromJson(weatherResponseJsonString, WeatherResponse::class.java)
 
-            // Here we update the main icon
-            when (weatherList.weather[z].icon) {
-                "01d" -> binding?.ivMain?.setImageResource(R.drawable.sunny)
-                "02d" ->  binding?.ivMain?.setImageResource(R.drawable.cloud)
-                "03d" ->  binding?.ivMain?.setImageResource(R.drawable.cloud)
-                "04d" ->  binding?.ivMain?.setImageResource(R.drawable.cloud)
-                "04n" ->  binding?.ivMain?.setImageResource(R.drawable.cloud)
-                "10d" ->  binding?.ivMain?.setImageResource(R.drawable.rain)
-                "11d" ->  binding?.ivMain?.setImageResource(R.drawable.storm)
-                "13d" ->  binding?.ivMain?.setImageResource(R.drawable.snowflake)
-                "01n" ->  binding?.ivMain?.setImageResource(R.drawable.cloud)
-                "02n" ->  binding?.ivMain?.setImageResource(R.drawable.cloud)
-                "03n" ->  binding?.ivMain?.setImageResource(R.drawable.cloud)
-                "10n" ->  binding?.ivMain?.setImageResource(R.drawable.cloud)
-                "11n" ->  binding?.ivMain?.setImageResource(R.drawable.rain)
-                "13n" ->  binding?.ivMain?.setImageResource(R.drawable.snowflake)
+            // For loop to get the required data. And all are populated in the UI.
+            for (z in weatherList.weather.indices) {
+                Log.i("NAMEEEEEEEE", weatherList.weather[z].main)
+
+                binding?.tvMain?.text = weatherList.weather[z].main
+                binding?.tvMainDescription?.text = weatherList.weather[z].description
+                binding?.tvTemp?.text =
+                    weatherList.main.temp.toString() + getUnit()
+                binding?.tvHumidity?.text = weatherList.main.humidity.toString() + " per cent"
+                binding?.tvMin?.text = weatherList.main.temp_min.toString() + " min"
+                binding?.tvMax?.text = weatherList.main.temp_max.toString() + " max"
+                binding?.tvSpeed?.text = weatherList.wind.speed.toString()
+                binding?.tvName?.text = weatherList.name
+                binding?.tvCountry?.text = weatherList.sys.country
+                binding?.tvSunriseTime?.text = unixTime(weatherList.sys.sunrise.toLong())
+                binding?.tvSunsetTime?.text = unixTime(weatherList.sys.sunset.toLong())
+
+                // Here we update the main icon
+                when (weatherList.weather[z].icon) {
+                    "01d" -> binding?.ivMain?.setImageResource(R.drawable.sunny)
+                    "02d" -> binding?.ivMain?.setImageResource(R.drawable.cloud)
+                    "03d" -> binding?.ivMain?.setImageResource(R.drawable.cloud)
+                    "04d" -> binding?.ivMain?.setImageResource(R.drawable.cloud)
+                    "04n" -> binding?.ivMain?.setImageResource(R.drawable.cloud)
+                    "10d" -> binding?.ivMain?.setImageResource(R.drawable.rain)
+                    "11d" -> binding?.ivMain?.setImageResource(R.drawable.storm)
+                    "13d" -> binding?.ivMain?.setImageResource(R.drawable.snowflake)
+                    "01n" -> binding?.ivMain?.setImageResource(R.drawable.cloud)
+                    "02n" -> binding?.ivMain?.setImageResource(R.drawable.cloud)
+                    "03n" -> binding?.ivMain?.setImageResource(R.drawable.cloud)
+                    "10n" -> binding?.ivMain?.setImageResource(R.drawable.cloud)
+                    "11n" -> binding?.ivMain?.setImageResource(R.drawable.rain)
+                    "13n" -> binding?.ivMain?.setImageResource(R.drawable.snowflake)
+                }
             }
-        }
+        }//END
     }
 
     /**
@@ -359,4 +425,5 @@ class MainActivity : AppCompatActivity() {
         return sdf.format(date)
     }
     // END
+
 }

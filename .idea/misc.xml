@@ -7,6 +7,7 @@
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/drawable/cloud.xml" value="0.1285" />
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/drawable/evening.xml" value="0.1285" />
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/drawable/humidity.xml" value="0.1285" />
+        <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/drawable/ic_refresh_24dp.xml" value="0.1285" />
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/drawable/location.xml" value="0.1285" />
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/drawable/morning.xml" value="0.1285" />
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/drawable/rain.xml" value="0.1285" />
@@ -19,6 +20,7 @@
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/drawable/wind.xml" value="0.1285" />
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/layout/dialog_custom_progress.xml" value="0.17552083333333332" />
+        <entry key="..\:/Users/adil0/AndroidStudioProjects/WeatherApp/app/src/main/res/menu/menu_main.xml" value="0.17552083333333332" />
       </map>
     </option>
   </component>

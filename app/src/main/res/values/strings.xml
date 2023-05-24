@@ -7,5 +7,10 @@
     <string name="image_contentDescription">image</string>
     <string name="miles_per_hour">miles/hour</string>
     <!--END-->
+    <!--TODO (STEP 3: Add the string value here.)-->
+    <!--START-->
+    <string name="action_refresh">Refresh</string>\
+    <!--END-->
+
 
 </resources>
